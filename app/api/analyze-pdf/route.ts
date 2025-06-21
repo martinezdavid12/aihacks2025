@@ -17,7 +17,14 @@ export async function POST(req: Request) {
     }
 
     const fileBuffer = await pdfFile.arrayBuffer()
-    const messagesForLetta: any[] = [
+
+    const messagesForLetta: Array<{
+      role: "user"
+      content: Array<
+        | { type: "text"; text: string }
+        | { type: "file"; data: string; mimeType: string }
+      >
+    }> = [
       {
         role: "user",
         content: [
@@ -31,10 +38,13 @@ export async function POST(req: Request) {
       },
     ]
 
-    const stream = await lettaCloud.client.agents.messages.createStream(process.env.LETTA_AGENT_ID_SOCIAL_AGENT, {
-      messages: messagesForLetta,
-      streamTokens: true,
-    })
+    const stream = await lettaCloud.client.agents.messages.createStream(
+      process.env.LETTA_AGENT_ID_SOCIAL_AGENT,
+      {
+        messages: messagesForLetta,
+        streamTokens: true,
+      }
+    )
 
     const readableStream = new ReadableStream({
       async start(controller) {
@@ -46,10 +56,15 @@ export async function POST(req: Request) {
         controller.close()
       },
     })
-    return new Response(readableStream, { headers: { "Content-Type": "text/plain; charset=utf-8" } })
-  } catch (error: any) {
+
+    return new Response(readableStream, {
+      headers: { "Content-Type": "text/plain; charset=utf-8" },
+    })
+  } catch (error) {
+    const errMessage =
+      error instanceof Error ? error.message : "Failed to process PDF."
     console.error("[Letta PDF API Error]", error)
-    return new Response(JSON.stringify({ error: error.message || "Failed to process PDF." }), {
+    return new Response(JSON.stringify({ error: errMessage }), {
       status: 500,
       headers: { "Content-Type": "application/json" },
     })

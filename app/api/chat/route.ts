@@ -10,15 +10,18 @@ export async function POST(req: Request) {
     if (!process.env.LETTA_AGENT_ID_SOCIAL_AGENT) {
       throw new Error("LETTA_AGENT_ID_SOCIAL_AGENT is not set.")
     }
-    // lettaCloud uses LETTA_API_KEY from environment by default
+
     const result = await streamText({
       model: lettaCloud(process.env.LETTA_AGENT_ID_SOCIAL_AGENT),
       prompt: prompt,
     })
+
     return result.toDataStreamResponse()
-  } catch (error: any) {
+  } catch (error) {
+    const errMessage =
+      error instanceof Error ? error.message : "Failed to process chat message."
     console.error("[Letta Chat API Error]", error)
-    return new Response(JSON.stringify({ error: error.message || "Failed to process chat message." }), {
+    return new Response(JSON.stringify({ error: errMessage }), {
       status: 500,
       headers: { "Content-Type": "application/json" },
     })
